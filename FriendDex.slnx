@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FriendDex.Web/FriendDex.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FriendDex.Tests/FriendDex.Tests.csproj" />
+  </Folder>
+</Solution>

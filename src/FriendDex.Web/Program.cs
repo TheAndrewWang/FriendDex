@@ -1,10 +1,15 @@
 using FriendDex.Web.Components;
+using FriendDex.Web.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddDbContextFactory<AppDbContext>(o => 
+        o.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 var app = builder.Build();
 

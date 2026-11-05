@@ -95,7 +95,12 @@ database wastes it. `await` says "pause this method here, give the thread back, 
 result arrives". Rules of thumb: methods that await return `Task` / `Task<T>` and are named
 `...Async`; async all the way up, never `.Result` or `.Wait()`.
 
-**Misc you'll meet:** `using` (import a namespace, or dispose a resource), `await using`
+**Misc you'll meet:** `using` (import a namespace, or dispose a resource), `await usingk, packages, and references |
+| NuGet package | A library someone published (`Microsoft.EntityFrameworkCore.Sqlite`). `dotnet add package` writes a `<PackageReference>` into the csproj |
+| `bin/` and `obj/` | Build output. Generated, git-ignored, safe to delete |
+| `Properties/launchSettings.json` | Dev-only settings (which port to listen on) |
+
+Open `src/FriendDex.Web/FriendD`
 (dispose when scope ends, e.g. a DbContext), string interpolation `$"Hi {name}"`,
 `namespace` (folders of code), `static` (belongs to the type, not an instance; `AgeCalculator`).
 

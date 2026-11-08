@@ -23,19 +23,36 @@ namespace FriendDex.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<byte[]>("Avatar")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("AvatarContentType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AvatarGeneratedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly?>("Birthday")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FavoriteColor")
+                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Gender")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Photo")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("PhotoContentType")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

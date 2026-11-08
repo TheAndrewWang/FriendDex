@@ -1,0 +1,64 @@
+.count {
+    font-size: 1rem;
+    background: var(--sun);
+    padding: 0.1rem 0.5rem;
+    box-shadow: 0 -2px 0 var(--ink), 0 2px 0 var(--ink), -2px 0 0 var(--ink), 2px 0 0 var(--ink);
+}
+
+.menu {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 1.5rem;          /* room for the ▶ cursor */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem 1.75rem;
+}
+
+.slot {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.6rem 0.75rem;
+    color: var(--ink);
+    text-decoration: none;
+    border: 3px solid transparent;
+}
+
+.slot:hover, .slot:focus-visible {
+    background: var(--sky-pale);
+    border-color: var(--ink);
+    outline: none;
+}
+
+.slot-sprite {
+    flex: none;
+    width: 72px;
+    height: 72px;
+    display: grid;
+    place-items: center;
+    background: var(--paper);
+}
+
+.slot-text { display: grid; gap: 0.1rem; min-width: 0; }
+
+.slot-name {
+    font-family: var(--font-pixel);
+    font-weight: 700;
+    font-size: 1.3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.slot-level { font-family: var(--font-pixel); color: var(--ink-soft); }
+
+.slot-badge {
+    justify-self: start;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--sun);
+    padding: 0 0.4rem;
+    margin-top: 0.2rem;
+}
+
+.empty { max-width: 32rem; }

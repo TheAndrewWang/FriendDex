@@ -1,0 +1,96 @@
+@page "/friends/new"
+@page "/friends/{Id:int}/edit"
+@rendermode InteractiveServer
+@using FriendDex.Web.Data
+@using FriendDex.Web.Domain
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> Factory
+@inject NavigationManager Nav
+
+<PageTitle>@(Id == null ? "Add friend" : "Edit friend")</PageTitle>
+<h1>@(Id == null ? "Add friend" : "Edit friend")</h1>
+
+@if (notFound)
+{
+    <p>That friend doesn't exist.</p>
+    <a href="/friends">Back to friends</a>
+}
+else if (friend == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="friend" OnValidSubmit="SaveAsync" style="max-width: 32rem">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label" for="name">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="friend.Name" />
+            <ValidationMessage For="() => friend.Name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="gender">Gender</label>
+            <InputText id="gender" class="form-control" @bind-Value="friend.Gender" />
+            <ValidationMessage For="() => friend.Gender" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="birthday">Birthday</label>
+            <InputDate id="birthday" class="form-control" @bind-Value="friend.Birthday" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="color">Favorite color</label>
+            <InputText id="color" class="form-control" @bind-Value="friend.FavoriteColor" placeholder="e.g. teal or #3a7bd5" />
+            <ValidationMessage For="() => friend.FavoriteColor" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" disabled="@saving">Save</button>
+        <a class="btn btn-secondary" href="@(Id == null ? "/friends" : $"/friends/{Id}")">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Friend? friend;
+    private bool notFound;
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id == null)
+        {
+            friend = new Friend();
+        }
+        else
+        {
+            await using var db = await Factory.CreateDbContextAsync();
+            friend = await db.Friends.FindAsync(Id.Value);
+            notFound = friend == null;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (friend == null) return;
+        saving = true;
+
+        friend.Name = friend.Name.Trim();
+        friend.Gender = friend.Gender.Trim();
+        friend.FavoriteColor = string.IsNullOrWhiteSpace(friend.FavoriteColor) ? null : friend.FavoriteColor.Trim();
+
+        await using var db = await Factory.CreateDbContextAsync();
+        if (Id == null)
+        {
+            db.Friends.Add(friend);
+        }
+        else
+        {
+            // The friend was loaded by a different (now disposed) context, so mark it as changed.
+            db.Friends.Update(friend);
+        }
+        await db.SaveChangesAsync();
+
+        Nav.NavigateTo($"/friends/{friend.Id}");
+    }
+}

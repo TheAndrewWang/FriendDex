@@ -1,0 +1,84 @@
+@page "/"
+@page "/friends"
+@rendermode InteractiveServer
+@using FriendDex.Web.Data
+@using FriendDex.Web.Domain
+@using FriendDex.Web.Services
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> Factory
+
+<PageTitle>FriendDex</PageTitle>
+
+@if (friends == null)
+{
+    <section class="win"><p class="muted">Loading your friends…</p></section>
+}
+else if (friends.Count == 0)
+{
+    <section class="win empty">
+        <h1 class="win-title">Your friend list is empty</h1>
+        <p>Add a friend to give them a passport and a sprite.</p>
+        <a class="px-btn px-btn-sun" href="/friends/new">+ Add your first friend</a>
+    </section>
+}
+else
+{
+    <section class="win">
+        <h1 class="win-title">Friends <span class="count">@friends.Count</span></h1>
+        <ul class="menu" role="list">
+            @foreach (var f in friends)
+            {
+                var age = AgeCalculator.GetAge(f.Birthday, today);
+                var next = AgeCalculator.NextBirthday(f.Birthday, today);
+                var daysToBirthday = next.HasValue ? next.Value.DayNumber - today.DayNumber : (int?)null;
+                <li>
+                    <a class="slot has-cursor" href="/friends/@f.Id">
+                        <span class="slot-sprite">
+                            @if (f.AvatarGeneratedAt != null)
+                            {
+                                <img class="sprite" src="/friends/@f.Id/avatar?v=@f.AvatarGeneratedAt?.Ticks" alt="" width="72" height="72" />
+                            }
+                            else
+                            {
+                                <Chibi Friend="f" Size="64" />
+                            }
+                        </span>
+                        <span class="slot-text">
+                            <span class="slot-name">@f.Name</span>
+                            <span class="slot-level">@(age.HasValue ? $"Lv {age}" : "Lv ?")</span>
+                            @if (daysToBirthday is >= 0 and <= 14)
+                            {
+                                <span class="slot-badge">@(daysToBirthday == 0 ? "Birthday today!" : $"Birthday in {daysToBirthday}d")</span>
+                            }
+                        </span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+@code {
+    private List<Friend>? friends;
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await Factory.CreateDbContextAsync();
+        // Skip photo and image bytes here; the list only needs the basics.
+        friends = await db.Friends
+            .AsNoTracking()
+            .OrderBy(f => f.Name)
+            .Select(f => new Friend
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Gender = f.Gender,
+                Birthday = f.Birthday,
+                FavoriteColor = f.FavoriteColor,
+                AvatarGeneratedAt = f.AvatarGeneratedAt,
+                Interests = f.Interests.ToList(),
+            })
+            .ToListAsync();
+    }
+}

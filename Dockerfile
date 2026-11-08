@@ -4,12 +4,14 @@
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY src/FriendDex.UI/FriendDex.UI.csproj src/FriendDex.UI/
-COPY src/FriendDex.Web/FriendDex.Web.csproj src/FriendDex.Web/
-RUN dotnet restore src/FriendDex.Web/FriendDex.Web.csproj
+# Copy the code BEFORE restoring: the .NET 10 Blazor build looks at the source files during restore to decide
+# which framework files to include. Restoring with only the .csproj files leaves out blazor.web.js,
+# and then no buttons on the website work.
 COPY src/FriendDex.UI/ src/FriendDex.UI/
 COPY src/FriendDex.Web/ src/FriendDex.Web/
-RUN dotnet publish src/FriendDex.Web/FriendDex.Web.csproj -c Release -o /app --no-restore
+RUN dotnet publish src/FriendDex.Web/FriendDex.Web.csproj -c Release -o /app
+# Fail the build if the Blazor script is missing, instead of deploying a site with dead buttons.
+RUN test -f /app/wwwroot/_framework/blazor.web.js
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app

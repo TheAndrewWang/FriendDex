@@ -290,7 +290,7 @@
     private async Task LoadAsync()
     {
         await using var db = await Factory.CreateDbContextAsync();
-        friend = await db.Friends.AsNoTracking().Include(f => f.Interests).FirstOrDefaultAsync(f => f.Id == Id);
+        friend = await db.Friends.AsNoTracking().FirstOrDefaultAsync(f => f.Id == Id);
         notFound = friend == null;
     }
 
@@ -298,7 +298,7 @@
     private async Task ChangeFriendAsync(Action<Friend> change)
     {
         await using var db = await Factory.CreateDbContextAsync();
-        var tracked = await db.Friends.Include(f => f.Interests).FirstOrDefaultAsync(f => f.Id == Id);
+        var tracked = await db.Friends.FirstOrDefaultAsync(f => f.Id == Id);
         if (tracked == null) { notFound = true; return; }
         change(tracked);
         await db.SaveChangesAsync();

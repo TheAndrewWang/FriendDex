@@ -9,11 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Anthropic" Version="13.6.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+    <PackageReference Include="MongoDB.EntityFrameworkCore" Version="10.0.5" />
     <PackageReference Include="SkiaSharp" Version="4.155.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.155.0" />
   </ItemGroup>

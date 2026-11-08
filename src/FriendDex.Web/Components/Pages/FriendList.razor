@@ -65,20 +65,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         await using var db = await Factory.CreateDbContextAsync();
-        // Skip photo and image bytes here; the list only needs the basics.
+        // Interests are embedded in each friend's document, so they load automatically.
         friends = await db.Friends
             .AsNoTracking()
             .OrderBy(f => f.Name)
-            .Select(f => new Friend
-            {
-                Id = f.Id,
-                Name = f.Name,
-                Gender = f.Gender,
-                Birthday = f.Birthday,
-                FavoriteColor = f.FavoriteColor,
-                AvatarGeneratedAt = f.AvatarGeneratedAt,
-                Interests = f.Interests.ToList(),
-            })
             .ToListAsync();
     }
 }

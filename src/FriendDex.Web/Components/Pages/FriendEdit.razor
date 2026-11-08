@@ -7,46 +7,52 @@
 @inject IDbContextFactory<AppDbContext> Factory
 @inject NavigationManager Nav
 
-<PageTitle>@(Id == null ? "Add friend" : "Edit friend")</PageTitle>
-<h1>@(Id == null ? "Add friend" : "Edit friend")</h1>
+<PageTitle>@(Id == null ? "New friend" : "Edit friend") · FriendDex</PageTitle>
 
 @if (notFound)
 {
-    <p>That friend doesn't exist.</p>
-    <a href="/friends">Back to friends</a>
+    <section class="win">
+        <h1 class="win-title">That friend isn't in your FriendDex</h1>
+        <a class="px-btn" href="/friends">Back to friends</a>
+    </section>
 }
 else if (friend == null)
 {
-    <p>Loading...</p>
+    <section class="win"><p class="muted">Loading…</p></section>
 }
 else
 {
-    <EditForm Model="friend" OnValidSubmit="SaveAsync" style="max-width: 32rem">
-        <DataAnnotationsValidator />
+    <section class="win edit-win">
+        <h1 class="win-title">@(Id == null ? "New friend" : $"Edit {friend.Name}")</h1>
+        <EditForm Model="friend" OnValidSubmit="SaveAsync">
+            <DataAnnotationsValidator />
 
-        <div class="mb-3">
-            <label class="form-label" for="name">Name</label>
-            <InputText id="name" class="form-control" @bind-Value="friend.Name" />
-            <ValidationMessage For="() => friend.Name" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="gender">Gender</label>
-            <InputText id="gender" class="form-control" @bind-Value="friend.Gender" />
-            <ValidationMessage For="() => friend.Gender" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="birthday">Birthday</label>
-            <InputDate id="birthday" class="form-control" @bind-Value="friend.Birthday" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="color">Favorite color</label>
-            <InputText id="color" class="form-control" @bind-Value="friend.FavoriteColor" placeholder="e.g. teal or #3a7bd5" />
-            <ValidationMessage For="() => friend.FavoriteColor" />
-        </div>
+            <div class="field">
+                <label for="name">Name</label>
+                <InputText id="name" class="px-input" @bind-Value="friend.Name" autocomplete="off" />
+                <ValidationMessage For="() => friend.Name" />
+            </div>
+            <div class="field">
+                <label for="birthday">Birthday</label>
+                <InputDate id="birthday" class="px-input" @bind-Value="friend.Birthday" />
+            </div>
+            <div class="field">
+                <label for="gender">Gender</label>
+                <InputText id="gender" class="px-input" @bind-Value="friend.Gender" />
+                <ValidationMessage For="() => friend.Gender" />
+            </div>
+            <div class="field">
+                <label for="color">Favorite color</label>
+                <InputText id="color" class="px-input" @bind-Value="friend.FavoriteColor" placeholder="teal, or a hex code like #3a7bd5" />
+                <ValidationMessage For="() => friend.FavoriteColor" />
+            </div>
 
-        <button type="submit" class="btn btn-primary" disabled="@saving">Save</button>
-        <a class="btn btn-secondary" href="@(Id == null ? "/friends" : $"/friends/{Id}")">Cancel</a>
-    </EditForm>
+            <div class="btn-row">
+                <button type="submit" class="px-btn px-btn-leaf" disabled="@saving">@(Id == null ? "Add friend" : "Save changes")</button>
+                <a class="text-btn" href="@(Id == null ? "/friends" : $"/friends/{Id}")">Cancel</a>
+            </div>
+        </EditForm>
+    </section>
 }
 
 @code {

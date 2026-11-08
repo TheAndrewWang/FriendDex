@@ -76,16 +76,14 @@ public class ChibiGenerator(HttpClient http, IConfiguration config)
 
         var lines = new List<string>
         {
-            "A single very low-resolution pixel art sprite, about 20x20 pixels, like a classic 8-bit handheld-game " +
-                "monster sprite or a perler bead figure. Each pixel is a big, hard-edged square. No anti-aliasing, " +
-                "no blur, no gradients, no fine detail.",
-            "Viewing angle: three-quarter view seen from above and to the front-right, as if the camera is at the " +
-                "top-right corner looking down at the character, like a top-down RPG overworld sprite.",
-            "Proportions: cute chibi, a big head that is about half of the body, tiny stubby arms and legs.",
-            "Outline: a thick, solid black outline exactly 1 pixel wide around the whole character, and black pixels " +
-                "for internal lines.",
-            "Eyes: simple, a block of black pixels with one white highlight pixel.",
-            "Color: flat, bright, saturated colors with only 2 or 3 shades per area (base, shadow, highlight).",
+            "A single pixel art sprite of a cute chibi character, about 48x48 pixels, in a polished 16-bit game style. " +
+                "Pixels are crisp, hard-edged squares: no anti-aliasing, no blur, no smooth gradients.",
+            "Viewing angle: straight-on front view. The character faces the viewer directly, standing upright, " +
+                "symmetrical pose, arms relaxed at the sides.",
+            "Proportions: chibi, a big head that is about half of the body, small body, short arms and legs.",
+            "Outline: a clean dark outline 1 pixel wide around the whole character, with dark pixels for internal lines.",
+            "Face: large friendly eyes with white highlight pixels, small simple mouth, light blush on the cheeks.",
+            "Color: bright, cheerful colors with 3 or 4 shades per area (base, shadow, highlight) for soft, readable shading.",
             "Background: plain pure white. Only the one character, filling most of the frame, centered. No text, " +
                 "no border, no ground shadow.",
         };

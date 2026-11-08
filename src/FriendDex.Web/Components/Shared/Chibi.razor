@@ -1,71 +1,13 @@
-@using System.Text.RegularExpressions
 @using FriendDex.Web.Domain
 
-@* A simple SVG chibi built from the friend's data:
-   shirt = favorite color, face = uploaded photo (if any),
-   likes = props around them, dislikes = crossed out in a thought bubble. *@
+@* Default pixel sprite (used until a sprite is generated with Gemini).
+   Boy / girl / neutral picked from the gender field; shirt = favorite color. *@
 
-<svg viewBox="0 0 240 260" width="@Size" height="@(Size * 260 / 240)" role="img" aria-label="@AriaLabel">
-    <defs>
-        <clipPath id="@ClipId">
-            <circle cx="120" cy="100" r="58" />
-        </clipPath>
-    </defs>
-
-    @* Body *@
-    <rect x="98" y="215" width="16" height="30" rx="7" fill="#4a4a4a" />
-    <rect x="126" y="215" width="16" height="30" rx="7" fill="#4a4a4a" />
-    <path d="M78 225 Q78 160 120 158 Q162 160 162 225 Z" fill="@ShirtColor" stroke="#00000022" />
-    <circle cx="72" cy="200" r="11" fill="#ffd9b8" />
-    <circle cx="168" cy="200" r="11" fill="#ffd9b8" />
-
-    @* Head *@
-    @if (PhotoDataUrl != null)
+<svg viewBox="-1 -1 @(width + 2) @(height + 2)" width="@Size" height="@Size"
+     shape-rendering="crispEdges" role="img" aria-label="@AriaLabel">
+    @foreach (var run in runs)
     {
-        <circle cx="120" cy="100" r="60" fill="#ffd9b8" />
-        <image href="@PhotoDataUrl" x="62" y="42" width="116" height="116"
-               preserveAspectRatio="xMidYMid slice" clip-path="url(#@ClipId)" />
-        <circle cx="120" cy="100" r="58" fill="none" stroke="#5b3a29" stroke-width="5" />
-    }
-    else
-    {
-        <circle cx="120" cy="100" r="60" fill="#ffd9b8" />
-        <path d="M60 98 Q58 38 120 36 Q182 38 180 98 Q170 66 140 62 Q128 78 96 70 Q74 72 60 98 Z" fill="#5b3a29" />
-        <ellipse cx="98" cy="108" rx="8" ry="11" fill="#2b2b2b" />
-        <ellipse cx="142" cy="108" rx="8" ry="11" fill="#2b2b2b" />
-        <circle cx="101" cy="104" r="3" fill="#fff" />
-        <circle cx="145" cy="104" r="3" fill="#fff" />
-        <ellipse cx="86" cy="126" rx="9" ry="5" fill="#ff9aa2" opacity="0.6" />
-        <ellipse cx="154" cy="126" rx="9" ry="5" fill="#ff9aa2" opacity="0.6" />
-        <path d="M110 130 Q120 140 130 130" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round" />
-    }
-
-    @if (HasHeadphones)
-    {
-        <path d="M58 100 Q58 30 120 30 Q182 30 182 100" stroke="#333" stroke-width="7" fill="none" />
-        <rect x="48" y="90" width="16" height="30" rx="6" fill="#e63946" />
-        <rect x="176" y="90" width="16" height="30" rx="6" fill="#e63946" />
-    }
-
-    @* Likes: props around the chibi *@
-    @for (var i = 0; i < LikeProps.Count && i < PropSpots.Length; i++)
-    {
-        var (x, y) = PropSpots[i];
-        @SvgText(x, y, 30, LikeProps[i])
-    }
-
-    @* Dislikes: thought bubble *@
-    @if (DislikeProps.Count > 0)
-    {
-        <circle cx="186" cy="38" r="5" fill="#fff" stroke="#999" />
-        <circle cx="196" cy="26" r="7" fill="#fff" stroke="#999" />
-        <rect x="150" y="0" width="88" height="26" rx="13" fill="#fff" stroke="#999" />
-        @for (var i = 0; i < DislikeProps.Count && i < 2; i++)
-        {
-            var cx = 172 + i * 40;
-            @SvgText(cx, 20, 17, DislikeProps[i])
-            <line x1="@(cx - 11)" y1="4" x2="@(cx + 11)" y2="22" stroke="#e63946" stroke-width="3" />
-        }
+        <rect x="@run.X" y="@run.Y" width="@run.Width" height="1" fill="@run.Fill" />
     }
 </svg>
 
@@ -73,98 +15,18 @@
     [Parameter, EditorRequired] public Friend Friend { get; set; } = null!;
     [Parameter] public int Size { get; set; } = 200;
 
-    private readonly string ClipId = "head-" + Guid.NewGuid().ToString("N");
-
-    private static readonly (int X, int Y)[] PropSpots = [(40, 175), (200, 175), (30, 245), (210, 245)];
-
-    // Keyword -> emoji. First match wins; order matters for overlapping words.
-    private static readonly (string[] Keys, string Emoji)[] PropMap =
-    [
-        (["music", "song", "sing", "concert", "guitar", "piano", "band"], "🎸"),
-        (["hik", "camp", "outdoor", "mountain"], "🥾"),
-        (["climb", "boulder"], "🧗"),
-        (["coffee", "espresso", "latte"], "☕"),
-        (["tea", "boba"], "🧋"),
-        (["book", "read", "novel"], "📚"),
-        (["game", "gaming", "video game"], "🎮"),
-        (["soccer", "football"], "⚽"),
-        (["basketball"], "🏀"),
-        (["tennis"], "🎾"),
-        (["run", "jog", "marathon"], "👟"),
-        (["swim"], "🏊"),
-        (["cook", "bak", "chef"], "🍳"),
-        (["pizza"], "🍕"),
-        (["sushi"], "🍣"),
-        (["spicy", "chili"], "🌶️"),
-        (["chocolate", "sweet", "dessert", "candy"], "🍫"),
-        (["ice cream"], "🍦"),
-        (["cat", "kitten"], "🐱"),
-        (["dog", "puppy"], "🐶"),
-        (["art", "draw", "paint", "sketch"], "🎨"),
-        (["photo", "camera"], "📷"),
-        (["travel", "trip", "flying"], "✈️"),
-        (["movie", "film", "cinema"], "🎬"),
-        (["anime", "manga"], "🍥"),
-        (["code", "coding", "program", "computer", "tech"], "💻"),
-        (["danc"], "💃"),
-        (["gym", "lift", "workout", "fitness"], "🏋️"),
-        (["plant", "garden", "flower"], "🪴"),
-        (["beach", "ocean", "surf"], "🏖️"),
-        (["crowd", "people", "party"], "👥"),
-        (["bug", "insect", "spider"], "🕷️"),
-        (["snake"], "🐍"),
-        (["rain"], "🌧️"),
-        (["cold", "winter", "snow"], "❄️"),
-        (["hot", "summer", "heat"], "🔥"),
-        (["early", "morning", "alarm"], "⏰"),
-        (["noise", "loud"], "📢"),
-        (["vegetable", "broccoli", "veggie"], "🥦"),
-    ];
-
-    private List<string> LikeProps = [];
-    private List<string> DislikeProps = [];
-    private bool HasHeadphones;
-    private string ShirtColor = "#6c8ebf";
-    private string? PhotoDataUrl;
+    private List<PixelSprites.Run> runs = [];
+    private int width;
+    private int height;
     private string AriaLabel = "";
 
     protected override void OnParametersSet()
     {
-        var likes = Friend.Interests.Where(i => i.Kind == InterestKind.Like).Select(i => i.Label).ToList();
-        var dislikes = Friend.Interests.Where(i => i.Kind == InterestKind.Dislike).Select(i => i.Label).ToList();
-
-        LikeProps = likes.Select(ToEmoji).OfType<string>().Distinct().ToList();
-        DislikeProps = dislikes.Select(ToEmoji).OfType<string>().Distinct().ToList();
-        HasHeadphones = likes.Any(l => Matches(l, ["music", "song", "headphone", "podcast"]));
-        ShirtColor = SafeColor(Friend.FavoriteColor) ?? "#6c8ebf";
-
-        PhotoDataUrl = Friend.Photo is { Length: > 0 } && Friend.PhotoContentType is { } type
-            ? $"data:{type};base64,{Convert.ToBase64String(Friend.Photo)}"
-            : null;
-
-        AriaLabel = $"Chibi of {Friend.Name}" +
-            (likes.Count > 0 ? $", likes {string.Join(", ", likes)}" : "") +
-            (dislikes.Count > 0 ? $", dislikes {string.Join(", ", dislikes)}" : "");
-    }
-
-    // Razor reserves <text>, so SVG text is emitted as markup. Emoji come only from PropMap (safe).
-    private static MarkupString SvgText(int x, int y, int size, string emoji) =>
-        new($"<text x=\"{x}\" y=\"{y}\" font-size=\"{size}\" text-anchor=\"middle\">{System.Net.WebUtility.HtmlEncode(emoji)}</text>");
-
-    private static string? ToEmoji(string label) =>
-        PropMap.FirstOrDefault(p => Matches(label, p.Keys)).Emoji;
-
-    private static bool Matches(string label, string[] keys)
-    {
-        var l = label.ToLowerInvariant();
-        return keys.Any(k => l.Contains(k));
-    }
-
-    // Only allow plain color names ("teal") or hex codes ("#3a7"), so user text can't break the SVG.
-    private static string? SafeColor(string? color)
-    {
-        if (string.IsNullOrWhiteSpace(color)) return null;
-        var c = color.Trim().ToLowerInvariant().Replace(" ", "");
-        return Regex.IsMatch(c, "^(#[0-9a-f]{3}|#[0-9a-f]{6}|[a-z]{3,20})$") ? c : null;
+        var kind = PixelSprites.KindFor(Friend.Gender);
+        var map = PixelSprites.MapFor(kind);
+        width = map.Max(r => r.Length);
+        height = map.Length;
+        runs = PixelSprites.Runs(map, PixelSprites.PaletteFor(kind, Friend.FavoriteColor));
+        AriaLabel = $"Pixel sprite of {Friend.Name}";
     }
 }

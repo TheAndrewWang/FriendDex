@@ -11,215 +11,252 @@
 
 @if (notFound)
 {
-    <PageTitle>Not found</PageTitle>
-    <p>That friend doesn't exist.</p>
-    <a href="/friends">Back to friends</a>
+    <PageTitle>Friend not found</PageTitle>
+    <section class="win">
+        <h1 class="win-title">That friend isn't in your FriendDex</h1>
+        <a class="px-btn" href="/friends">Back to friends</a>
+    </section>
     return;
 }
 @if (friend == null)
 {
-    <p>Loading...</p>
+    <section class="win"><p class="muted">Loading…</p></section>
     return;
 }
 
-<PageTitle>@friend.Name</PageTitle>
+@{
+    var age = AgeCalculator.GetAge(friend.Birthday, today);
+    var next = AgeCalculator.NextBirthday(friend.Birthday, today);
+    var daysToBirthday = next.HasValue ? next.Value.DayNumber - today.DayNumber : (int?)null;
+}
 
-<div class="d-flex flex-wrap gap-4 align-items-start mb-4">
-    <div class="text-center">
-        @if (friend.Avatar != null)
-        {
-            <img src="/friends/@friend.Id/avatar?v=@friend.AvatarGeneratedAt?.Ticks" alt="Chibi of @friend.Name"
-                 width="220" height="220" class="rounded" style="object-fit: contain; image-rendering: pixelated" />
-        }
-        else
-        {
-            <Chibi Friend="friend" Size="220" />
-        }
-        <div class="mt-2">
-            <button class="btn btn-sm btn-primary" @onclick="GenerateChibiAsync" disabled="@generating">
-                @(generating ? "Drawing..." : friend.Avatar == null ? "Generate chibi ✨" : "Regenerate")
-            </button>
-            @if (friend.Avatar != null && !generating)
-            {
-                <button class="btn btn-sm btn-link" @onclick="ClearAvatarAsync">Use drawn version</button>
-            }
-        </div>
-        @if (generating)
-        {
-            <div class="text-muted small mt-1">This can take up to a minute.</div>
-        }
-        @if (chibiError != null)
-        {
-            <div class="text-danger small mt-1" style="max-width: 16rem">@chibiError</div>
-        }
-        <div class="mt-2">
-            <label class="btn btn-sm btn-outline-secondary mb-0">
-                @(friend.Photo == null ? "Upload photo" : "Change photo")
-                <InputFile OnChange="UploadPhotoAsync" accept="image/png,image/jpeg,image/webp,image/gif" class="d-none" />
-            </label>
-            @if (friend.Photo != null)
-            {
-                <button class="btn btn-sm btn-link" @onclick="RemovePhotoAsync">Remove</button>
-            }
-        </div>
-        @if (photoError != null)
-        {
-            <div class="text-danger small mt-1">@photoError</div>
-        }
-    </div>
+<PageTitle>@friend.Name · FriendDex</PageTitle>
 
-    <div class="flex-grow-1">
-        <h1>@friend.Name</h1>
-        <dl class="row mb-3" style="max-width: 28rem">
-            <dt class="col-5">Age</dt>
-            <dd class="col-7">@(AgeCalculator.GetAge(friend.Birthday, today)?.ToString() ?? "—")</dd>
-            <dt class="col-5">Birthday</dt>
-            <dd class="col-7">@(friend.Birthday?.ToString("MMM d, yyyy") ?? "—")</dd>
-            <dt class="col-5">Next birthday</dt>
-            <dd class="col-7">@(AgeCalculator.NextBirthday(friend.Birthday, today)?.ToString("MMM d, yyyy") ?? "—")</dd>
-            <dt class="col-5">Gender</dt>
-            <dd class="col-7">@(string.IsNullOrWhiteSpace(friend.Gender) ? "—" : friend.Gender)</dd>
-            <dt class="col-5">Favorite color</dt>
-            <dd class="col-7">@(friend.FavoriteColor ?? "—")</dd>
-        </dl>
-        <a class="btn btn-outline-primary btn-sm" href="/friends/@friend.Id/edit">Edit details</a>
-        @if (confirmDelete)
-        {
-            <span class="ms-2">Delete @friend.Name and all their interests?</span>
-            <button class="btn btn-danger btn-sm ms-1" @onclick="DeleteFriendAsync">Yes, delete</button>
-            <button class="btn btn-secondary btn-sm ms-1" @onclick="() => confirmDelete = false">Cancel</button>
-        }
-        else
-        {
-            <button class="btn btn-outline-danger btn-sm ms-2" @onclick="() => confirmDelete = true">Delete friend</button>
-        }
-    </div>
-</div>
+<a class="back has-cursor" href="/friends">Friends</a>
 
-@* ---------- AI note box ---------- *@
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h5">Tell FriendDex about @friend.Name</h2>
-        <textarea class="form-control mb-2" rows="3" @bind="note" @bind:event="oninput"
-                  placeholder="e.g. Got into bouldering this spring, but hates crowded gyms. Birthday is March 4, 1999."
-                  disabled="@thinking"></textarea>
-        <button class="btn btn-primary" @onclick="AnalyzeNoteAsync" disabled="@(thinking || string.IsNullOrWhiteSpace(note))">
-            @(thinking ? "Thinking..." : "Suggest updates")
-        </button>
-        @if (agentError != null)
-        {
-            <div class="alert alert-warning mt-3 mb-0">@agentError</div>
-        }
+@* ---------- Passport ---------- *@
+<article class="win passport">
+    <h1 class="passport-title">Friend passport</h1>
 
-        @if (proposal != null)
-        {
-            <div class="border rounded p-3 mt-3 bg-light">
-                @if (proposal.IsEmpty)
+    <div class="passport-body">
+        <div class="photo-col">
+            <div class="photo-frame @(hopKey > 0 ? "hop" : "")" @key="hopKey">
+                @if (friend.Avatar != null)
                 {
-                    <p class="mb-2">No changes found in that note.</p>
-                    <button class="btn btn-secondary btn-sm" @onclick="() => proposal = null">OK</button>
+                    <img class="sprite" src="/friends/@friend.Id/avatar?v=@friend.AvatarGeneratedAt?.Ticks"
+                         alt="Pixel sprite of @friend.Name" width="192" height="192" />
                 }
                 else
                 {
-                    <p class="fw-semibold mb-2">@proposal.Summary</p>
-                    <ul class="mb-3">
-                        @if (proposal.Gender != null) { <li>Gender → @proposal.Gender</li> }
-                        @if (proposal.Birthday != null) { <li>Birthday → @proposal.Birthday</li> }
-                        @if (proposal.FavoriteColor != null) { <li>Favorite color → @proposal.FavoriteColor</li> }
-                        @foreach (var add in proposal.AddInterests)
-                        {
-                            <li>Add @(add.Kind == "Dislike" ? "dislike" : "like"): <strong>@add.Label</strong>@(add.Notes != null ? $" — {add.Notes}" : "")</li>
-                        }
-                        @foreach (var edit in proposal.UpdateInterests)
-                        {
-                            var label = friend.Interests.FirstOrDefault(i => i.Id == edit.Id)?.Label ?? $"#{edit.Id}";
-                            <li>
-                                Update <strong>@label</strong>:
-                                @if (edit.Kind != null) { <span>now a @edit.Kind.ToLowerInvariant(). </span> }
-                                @if (edit.Notes != null) { <span>notes → “@edit.Notes”</span> }
-                            </li>
-                        }
-                        @foreach (var id in proposal.RemoveInterestIds)
-                        {
-                            var label = friend.Interests.FirstOrDefault(i => i.Id == id)?.Label ?? $"#{id}";
-                            <li>Remove <strong>@label</strong></li>
-                        }
-                    </ul>
-                    <button class="btn btn-success btn-sm" @onclick="ApplyProposalAsync">Apply changes</button>
-                    <button class="btn btn-secondary btn-sm ms-1" @onclick="() => proposal = null">Discard</button>
+                    <Chibi Friend="friend" Size="170" />
                 }
             </div>
-        }
+
+            <div class="btn-row photo-actions">
+                <button class="px-btn px-btn-sun px-btn-sm" @onclick="GenerateChibiAsync" disabled="@generating">
+                    @(generating ? "Drawing…" : friend.Avatar == null ? "Make sprite" : "Redraw sprite")
+                </button>
+                <label class="px-btn px-btn-sm">
+                    @(friend.Photo == null ? "Add photo" : "Change photo")
+                    <InputFile OnChange="UploadPhotoAsync" accept="image/png,image/jpeg,image/webp,image/gif" class="visually-hidden" />
+                </label>
+            </div>
+            <div class="btn-row">
+                @if (friend.Avatar != null && !generating)
+                {
+                    <button class="text-btn" @onclick="ClearAvatarAsync">Use drawn version</button>
+                }
+                @if (friend.Photo != null)
+                {
+                    <button class="text-btn" @onclick="RemovePhotoAsync">Remove photo</button>
+                }
+            </div>
+            @if (generating) { <p class="muted small">Drawing can take up to a minute.</p> }
+            @if (chibiError != null) { <p class="error-text" role="alert">@chibiError</p> }
+            @if (photoError != null) { <p class="error-text" role="alert">@photoError</p> }
+        </div>
+
+        <div class="info-col">
+            <h2 class="friend-name">@friend.Name</h2>
+            <p class="friend-level">@(age.HasValue ? $"Lv {age}" : "Level unknown")</p>
+
+            <dl class="facts">
+                <dt>Birthday</dt>
+                <dd>@(friend.Birthday?.ToString("MMMM d, yyyy") ?? "Not set")</dd>
+                <dt>Gender</dt>
+                <dd>@(string.IsNullOrWhiteSpace(friend.Gender) ? "Not set" : friend.Gender)</dd>
+                <dt>Favorite color</dt>
+                <dd>
+                    @if (friend.FavoriteColor != null)
+                    {
+                        <span class="swatch" style="background: @SafeSwatch(friend.FavoriteColor)"></span>
+                        @friend.FavoriteColor
+                    }
+                    else { <span>Not set</span> }
+                </dd>
+            </dl>
+
+            @if (daysToBirthday.HasValue)
+            {
+                <div class="stamp" aria-label="Next birthday">
+                    <span class="stamp-big">@(daysToBirthday == 0 ? "Today!" : daysToBirthday == 1 ? "1 day" : $"{daysToBirthday} days")</span>
+                    <span class="stamp-small">@(daysToBirthday == 0 ? "Happy birthday!" : $"until {next!.Value:MMM d}")</span>
+                </div>
+            }
+
+            <div class="btn-row passport-actions">
+                <a class="px-btn px-btn-sm" href="/friends/@friend.Id/edit">Edit details</a>
+                @if (confirmDelete)
+                {
+                    <span class="confirm-text">Delete @friend.Name and everything about them?</span>
+                    <button class="px-btn px-btn-berry px-btn-sm" @onclick="DeleteFriendAsync">Delete</button>
+                    <button class="text-btn" @onclick="() => confirmDelete = false">Keep</button>
+                }
+                else
+                {
+                    <button class="text-btn" @onclick="() => confirmDelete = true">Delete friend</button>
+                }
+            </div>
+        </div>
     </div>
-</div>
+</article>
+
+@* ---------- Dialog box: tell FriendDex something ---------- *@
+<section class="win dialog">
+    <label class="dialog-prompt" for="note">What's new with @friend.Name?</label>
+    <textarea id="note" class="px-textarea" rows="3" @bind="note" @bind:event="oninput" disabled="@thinking"
+              placeholder="Got into bouldering this spring, but hates crowded gyms. Birthday is March 4, 1999."></textarea>
+    <div class="btn-row dialog-actions">
+        <button class="px-btn px-btn-sun" @onclick="AnalyzeNoteAsync" disabled="@(thinking || string.IsNullOrWhiteSpace(note))">
+            @(thinking ? "Thinking…" : "Suggest updates")
+        </button>
+    </div>
+    @if (agentError != null) { <p class="error-text" role="alert">@agentError</p> }
+
+    @if (proposal != null)
+    {
+        <div class="choices" role="region" aria-label="Suggested updates">
+            @if (proposal.IsEmpty)
+            {
+                <p>Nothing to update from that note.</p>
+                <button class="px-btn px-btn-sm" @onclick="() => proposal = null">OK</button>
+            }
+            else
+            {
+                <p class="choices-summary">@proposal.Summary</p>
+                <ul class="change-list">
+                    @if (proposal.Gender != null) { <li>Gender: @proposal.Gender</li> }
+                    @if (proposal.Birthday != null) { <li>Birthday: @proposal.Birthday</li> }
+                    @if (proposal.FavoriteColor != null) { <li>Favorite color: @proposal.FavoriteColor</li> }
+                    @foreach (var add in proposal.AddInterests)
+                    {
+                        <li><span class="tag @(add.Kind == "Dislike" ? "tag-dislike" : "tag-like")">@add.Label</span>
+                            new @(add.Kind == "Dislike" ? "dislike" : "like")@(add.Notes != null ? $": {add.Notes}" : "")</li>
+                    }
+                    @foreach (var edit in proposal.UpdateInterests)
+                    {
+                        var label = friend.Interests.FirstOrDefault(i => i.Id == edit.Id)?.Label ?? $"#{edit.Id}";
+                        <li>
+                            <span class="tag">@label</span>
+                            @if (edit.Kind != null) { <span> now a @edit.Kind.ToLowerInvariant().</span> }
+                            @if (edit.Notes != null) { <span> Notes: @edit.Notes</span> }
+                        </li>
+                    }
+                    @foreach (var id in proposal.RemoveInterestIds)
+                    {
+                        var label = friend.Interests.FirstOrDefault(i => i.Id == id)?.Label ?? $"#{id}";
+                        <li><span class="tag">@label</span> removed</li>
+                    }
+                </ul>
+                <div class="btn-row">
+                    <button class="px-btn px-btn-leaf has-cursor" @onclick="ApplyProposalAsync">Apply changes</button>
+                    <button class="px-btn has-cursor" @onclick="() => proposal = null">Discard</button>
+                </div>
+            }
+        </div>
+    }
+</section>
 
 @* ---------- Likes and dislikes ---------- *@
-<div class="row g-4 mb-4">
+<div class="grid-2">
     @foreach (var kind in new[] { InterestKind.Like, InterestKind.Dislike })
     {
         var items = friend.Interests.Where(i => i.Kind == kind).OrderBy(i => i.Label).ToList();
-        <div class="col-md-6">
-            <h2 class="h5">@(kind == InterestKind.Like ? "Likes" : "Dislikes")</h2>
+        var open = items.FirstOrDefault(i => i.Id == openInterestId);
+        <section class="win interests @(kind == InterestKind.Like ? "interests-like" : "interests-dislike")">
+            <h2 class="win-title">@(kind == InterestKind.Like ? "Likes" : "Dislikes")</h2>
             @if (items.Count == 0)
             {
-                <p class="text-muted">None yet.</p>
+                <p class="muted">None yet. Add one below or tell FriendDex in the box above.</p>
             }
-            <ul class="list-group">
+            <div class="tags">
                 @foreach (var interest in items)
                 {
-                    <li class="list-group-item">
-                        <button class="btn btn-link p-0 text-start fw-semibold" @onclick="() => ToggleInterest(interest)">
-                            @interest.Label
-                        </button>
-                        @if (openInterestId == interest.Id)
-                        {
-                            @if (editingInterestId == interest.Id)
-                            {
-                                <input class="form-control form-control-sm mt-2" maxlength="50" @bind="editLabel" />
-                                <textarea class="form-control form-control-sm mt-2" rows="3" @bind="editNotes" placeholder="Notes"></textarea>
-                                <div class="mt-2">
-                                    <button class="btn btn-primary btn-sm" @onclick="() => SaveInterestEditAsync(interest)" disabled="@string.IsNullOrWhiteSpace(editLabel)">Save</button>
-                                    <button class="btn btn-secondary btn-sm ms-1" @onclick="() => editingInterestId = null">Cancel</button>
-                                </div>
-                            }
-                            else
-                            {
-                                <p class="mt-2 mb-2" style="white-space: pre-wrap">@(string.IsNullOrWhiteSpace(interest.Notes) ? "No notes." : interest.Notes)</p>
-                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(interest)">Edit</button>
-                                <button class="btn btn-outline-secondary btn-sm ms-1" @onclick="() => FlipInterestAsync(interest)">
-                                    Move to @(interest.Kind == InterestKind.Like ? "dislikes" : "likes")
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm ms-1" @onclick="() => DeleteInterestAsync(interest)">Delete</button>
-                            }
-                        }
-                    </li>
+                    <button class="tag @(kind == InterestKind.Like ? "tag-like" : "tag-dislike") @(openInterestId == interest.Id ? "tag-open" : "")"
+                            aria-expanded="@(openInterestId == interest.Id ? "true" : "false")"
+                            @onclick="() => ToggleInterest(interest)">
+                        @interest.Label
+                    </button>
                 }
-            </ul>
-        </div>
+            </div>
+
+            @if (open != null)
+            {
+                <div class="interest-detail">
+                    @if (editingInterestId == open.Id)
+                    {
+                        <label class="field-label" for="edit-label">Label</label>
+                        <input id="edit-label" class="px-input" maxlength="50" @bind="editLabel" />
+                        <label class="field-label" for="edit-notes">Notes</label>
+                        <textarea id="edit-notes" class="px-textarea" rows="3" @bind="editNotes"></textarea>
+                        <div class="btn-row">
+                            <button class="px-btn px-btn-leaf px-btn-sm" @onclick="() => SaveInterestEditAsync(open)" disabled="@string.IsNullOrWhiteSpace(editLabel)">Save</button>
+                            <button class="text-btn" @onclick="() => editingInterestId = null">Cancel</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="notes">@(string.IsNullOrWhiteSpace(open.Notes) ? "No notes yet." : open.Notes)</p>
+                        <div class="btn-row">
+                            <button class="px-btn px-btn-sm" @onclick="() => StartEdit(open)">Edit</button>
+                            <button class="px-btn px-btn-sm" @onclick="() => FlipInterestAsync(open)">
+                                Move to @(open.Kind == InterestKind.Like ? "dislikes" : "likes")
+                            </button>
+                            <button class="text-btn" @onclick="() => DeleteInterestAsync(open)">Delete</button>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
     }
 </div>
 
 @* ---------- Add interest by hand ---------- *@
-<div class="card mb-4" style="max-width: 36rem">
-    <div class="card-body">
-        <h2 class="h6">Add an interest</h2>
-        <EditForm Model="newInterest" OnValidSubmit="AddInterestAsync">
-            <DataAnnotationsValidator />
-            <div class="d-flex gap-2 mb-2">
-                <InputText class="form-control" placeholder="Label, e.g. hiking" @bind-Value="newInterest.Label" />
-                <InputSelect class="form-select" style="max-width: 9rem" @bind-Value="newInterest.Kind">
+<section class="win add-interest">
+    <h2 class="win-title">Add a like or dislike</h2>
+    <EditForm Model="newInterest" OnValidSubmit="AddInterestAsync">
+        <DataAnnotationsValidator />
+        <div class="add-row">
+            <div class="field grow">
+                <label for="new-label">Label</label>
+                <InputText id="new-label" class="px-input" placeholder="hiking" @bind-Value="newInterest.Label" />
+                <ValidationMessage For="() => newInterest.Label" />
+            </div>
+            <div class="field">
+                <label for="new-kind">Type</label>
+                <InputSelect id="new-kind" class="px-select" @bind-Value="newInterest.Kind">
                     <option value="@InterestKind.Like">Like</option>
                     <option value="@InterestKind.Dislike">Dislike</option>
                 </InputSelect>
             </div>
-            <ValidationMessage For="() => newInterest.Label" />
-            <InputTextArea class="form-control mb-2" rows="2" placeholder="Notes (optional)" @bind-Value="newInterest.Notes" />
-            <button type="submit" class="btn btn-primary btn-sm">Add</button>
-        </EditForm>
-    </div>
-</div>
-
-<a href="/friends">← All friends</a>
+        </div>
+        <div class="field">
+            <label for="new-notes">Notes (optional)</label>
+            <InputTextArea id="new-notes" class="px-textarea" rows="2" @bind-Value="newInterest.Notes" />
+        </div>
+        <button type="submit" class="px-btn px-btn-leaf">Add</button>
+    </EditForm>
+</section>
 
 @code {
     [Parameter] public int Id { get; set; }
@@ -245,6 +282,7 @@
     private string? photoError;
 
     private bool generating;
+    private int hopKey;
     private string? chibiError;
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
@@ -401,6 +439,7 @@
                 f.AvatarContentType = image.ContentType;
                 f.AvatarGeneratedAt = DateTime.UtcNow;
             });
+            hopKey++;
         }
         catch (InvalidOperationException ex)
         {
@@ -422,6 +461,13 @@
         f.AvatarContentType = null;
         f.AvatarGeneratedAt = null;
     });
+
+    // Only plain color names or hex codes are used as CSS, so user text can't inject styles.
+    private static string SafeSwatch(string color)
+    {
+        var c = color.Trim().ToLowerInvariant().Replace(" ", "");
+        return System.Text.RegularExpressions.Regex.IsMatch(c, "^(#[0-9a-f]{3}|#[0-9a-f]{6}|[a-z]{3,20})$") ? c : "transparent";
+    }
 
     // ---- Delete ----
 

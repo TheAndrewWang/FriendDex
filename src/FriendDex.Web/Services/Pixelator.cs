@@ -5,7 +5,7 @@ namespace FriendDex.Web.Services;
 // Snaps an image to a small pixel grid (like perler beads), so sprites always look chunky.
 public static class Pixelator
 {
-    public const int Grid = 24;
+    public const int Grid = 48;
 
     public static byte[] ToPixelGrid(byte[] imageBytes, int grid = Grid)
     {

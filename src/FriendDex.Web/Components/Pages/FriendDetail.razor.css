@@ -1,0 +1,149 @@
+.back {
+    display: inline-block;
+    font-family: var(--font-pixel);
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--paper);
+    text-decoration: none;
+    padding: 0.3rem 0.7rem;
+    margin: 0 0 1rem 1.5rem;
+    box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink);
+}
+
+/* ---------- Passport ---------- */
+.passport { padding: 0; overflow: hidden; }
+
+.passport-title {
+    font-size: 1.1rem;
+    margin: 0;
+    padding: 0.6rem 1.25rem;
+    background: var(--sky);
+    border-bottom: 4px solid var(--ink);
+    /* Perforated edge, like a passport page */
+    background-image: radial-gradient(circle at 8px 100%, var(--paper) 3px, transparent 3.5px);
+    background-size: 16px 100%;
+    background-repeat: repeat-x;
+}
+
+.passport-body {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.75rem;
+    padding: 1.5rem;
+    background: var(--paper);
+}
+
+.photo-col { display: grid; justify-items: center; align-content: start; gap: 0.5rem; width: 15rem; }
+
+.photo-frame {
+    width: 13rem;
+    height: 13rem;
+    display: grid;
+    place-items: center;
+    background: var(--sky-pale);
+    margin: 4px 4px 0.5rem;
+    box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink);
+}
+.photo-frame ::deep img { width: 12rem; height: 12rem; }
+
+.photo-actions { justify-content: center; }
+
+.info-col { min-width: 0; position: relative; }
+
+.friend-name {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.friend-level {
+    font-family: var(--font-pixel);
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    margin: 0 0 1rem;
+}
+
+.facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.4rem 1.25rem;
+    margin: 0 0 1.25rem;
+    max-width: 30rem;
+}
+.facts dt { font-weight: 700; color: var(--ink-soft); }
+.facts dd { margin: 0; display: flex; align-items: center; gap: 0.5rem; overflow-wrap: anywhere; }
+
+.swatch {
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 3px solid var(--ink);
+    display: inline-block;
+    flex: none;
+}
+
+/* The birthday stamp: the one rotated, inked element on the page */
+.stamp {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: grid;
+    justify-items: center;
+    width: 8.5rem;
+    padding: 0.7rem 0.5rem;
+    color: var(--ink);
+    background: var(--sun);
+    border: 3px dashed var(--ink);
+    outline: 3px solid var(--sun);
+    transform: rotate(6deg);
+    text-align: center;
+}
+.stamp-big { font-family: var(--font-pixel); font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
+.stamp-small { font-size: 0.8rem; font-weight: 700; }
+
+.passport-actions { margin-top: 0.5rem; }
+.confirm-text { font-weight: 700; }
+
+/* ---------- Dialog box ---------- */
+.dialog-prompt {
+    display: block;
+    font-family: var(--font-pixel);
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+}
+.dialog-actions { margin-top: 0.6rem; justify-content: flex-end; }
+
+.choices {
+    margin-top: 1rem;
+    padding: 1rem 1rem 1rem 2.25rem;   /* room for the ▶ cursor */
+    background: var(--sky-pale);
+    border: 3px solid var(--ink);
+}
+.choices-summary { font-weight: 700; }
+.change-list { margin: 0 0 1rem; padding-left: 1.1rem; display: grid; gap: 0.35rem; }
+
+/* ---------- Interests ---------- */
+.interests-like .win-title::before { content: "♥ "; color: var(--leaf); }
+.interests-dislike .win-title::before { content: "✕ "; color: var(--berry); }
+.tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.interest-detail {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    border: 3px solid var(--ink);
+    background: var(--sky-pale);
+    display: grid;
+    gap: 0.5rem;
+}
+.notes { white-space: pre-wrap; margin: 0; }
+
+/* ---------- Add interest ---------- */
+.add-interest { max-width: 40rem; }
+.add-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.grow { flex: 1 1 14rem; }
+
+@media (max-width: 40rem) {
+    .passport-body { grid-template-columns: 1fr; }
+    .photo-col { width: 100%; }
+    .stamp { position: static; transform: rotate(-3deg); margin: 0 0 1rem; justify-self: start; }
+}

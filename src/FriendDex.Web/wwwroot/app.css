@@ -185,3 +185,33 @@ a { color: var(--ink); }
 /* ---------- Blazor error boundary ---------- */
 .blazor-error-boundary { background: var(--berry); padding: 1rem; color: var(--paper); }
 .blazor-error-boundary::after { content: "Something went wrong on this part of the page."; }
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+.small { font-size: 0.85rem; }
+
+/* Like / dislike tags (used on the passport and in AI suggestions) */
+.tag {
+    display: inline-block;
+    font-family: var(--font-pixel);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: var(--sky-pale);
+    border: 3px solid var(--ink);
+    padding: 0.2rem 0.6rem;
+    margin: 0 0.15rem 0.15rem 0;
+}
+.tag-like { background: var(--leaf-pale); }
+.tag-dislike { background: var(--berry-pale); }
+button.tag { cursor: pointer; }
+button.tag:hover { filter: brightness(0.96); }
+.tag-open { box-shadow: 0 3px 0 var(--ink); transform: translateY(-2px); }
+
+/* Windows inside a grid are spaced by the grid gap, not by the stacking margin */
+.grid-2 > .win, .grid-2 > .win + .win { margin: var(--px); }

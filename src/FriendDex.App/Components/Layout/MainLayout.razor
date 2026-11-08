@@ -1,0 +1,35 @@
+@inherits LayoutComponentBase
+@inject AppSettings Settings
+@inject NavigationManager Nav
+
+<div class="game">
+    <header class="topbar">
+        <a class="logo" href="/friends">FriendDex</a>
+        <div class="topbar-actions">
+            <a class="px-btn px-btn-sun px-btn-sm" href="/friends/new">+ New</a>
+            <a class="px-btn px-btn-sm" href="/account" aria-label="Account">⚙</a>
+        </div>
+    </header>
+
+    <main class="stage">
+        @if (ready)
+        {
+            @Body
+        }
+    </main>
+</div>
+
+@code {
+    private bool ready;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Settings.LoadAsync();
+        // Not logged in yet (or logged out): show the login screen.
+        if (!Settings.IsLoggedIn && !Nav.Uri.EndsWith("/login", StringComparison.OrdinalIgnoreCase))
+        {
+            Nav.NavigateTo("/login");
+        }
+        ready = true;
+    }
+}

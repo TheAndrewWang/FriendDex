@@ -1,0 +1,23 @@
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1rem 0.5rem;
+}
+
+.topbar-actions { display: flex; gap: 0.25rem; }
+
+.logo {
+    font-family: var(--font-pixel);
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--paper);
+    text-decoration: none;
+    text-shadow:
+        3px 0 var(--ink), -3px 0 var(--ink), 0 3px var(--ink), 0 -3px var(--ink),
+        3px 3px var(--ink), -3px 3px var(--ink), 3px -3px var(--ink), -3px -3px var(--ink),
+        0 6px var(--ink);
+}
+
+.stage { padding: 0.5rem 0.75rem 2.5rem; }

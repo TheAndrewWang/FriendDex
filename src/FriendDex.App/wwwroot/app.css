@@ -1,0 +1,25 @@
+/* App-only styles. The game-menu look comes from _content/FriendDex.UI/app.css. */
+
+.status-bar-safe-area { height: env(safe-area-inset-top); background: var(--sky); }
+
+.ok-text { color: #2f7a25; font-weight: 700; }
+
+code { font-size: 0.9em; background: var(--sky-pale); padding: 0 0.25rem; }
+
+#blazor-error-ui {
+    background: var(--sun);
+    color: var(--ink);
+    bottom: 0;
+    box-shadow: 0 -4px 0 var(--ink);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+#blazor-error-ui .dismiss { cursor: pointer; position: absolute; right: 0.75rem; top: 0.5rem; }
+
+.account-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0 0 1.25rem; }
+.account-facts dt { font-weight: 700; color: var(--ink-soft); }
+.account-facts dd { margin: 0; overflow-wrap: anywhere; }

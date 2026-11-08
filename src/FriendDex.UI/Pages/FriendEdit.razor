@@ -1,10 +1,6 @@
 @page "/friends/new"
 @page "/friends/{Id:int}/edit"
-@rendermode InteractiveServer
-@using FriendDex.Web.Data
-@using FriendDex.Web.Domain
-@using Microsoft.EntityFrameworkCore
-@inject IDbContextFactory<AppDbContext> Factory
+@inject IFriendDexService Friends
 @inject NavigationManager Nav
 
 <PageTitle>@(Id == null ? "New friend" : "Edit friend") · FriendDex</PageTitle>
@@ -47,6 +43,7 @@ else
                 <ValidationMessage For="() => friend.FavoriteColor" />
             </div>
 
+            @if (saveError != null) { <p class="error-text" role="alert">@saveError</p> }
             <div class="btn-row">
                 <button type="submit" class="px-btn px-btn-leaf" disabled="@saving">@(Id == null ? "Add friend" : "Save changes")</button>
                 <a class="text-btn" href="@(Id == null ? "/friends" : $"/friends/{Id}")">Cancel</a>
@@ -61,6 +58,7 @@ else
     private Friend? friend;
     private bool notFound;
     private bool saving;
+    private string? saveError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,8 +68,7 @@ else
         }
         else
         {
-            await using var db = await Factory.CreateDbContextAsync();
-            friend = await db.Friends.FindAsync(Id.Value);
+            friend = await Friends.GetFriendAsync(Id.Value);
             notFound = friend == null;
         }
     }
@@ -80,23 +77,21 @@ else
     {
         if (friend == null) return;
         saving = true;
+        saveError = null;
 
         friend.Name = friend.Name.Trim();
         friend.Gender = friend.Gender.Trim();
         friend.FavoriteColor = string.IsNullOrWhiteSpace(friend.FavoriteColor) ? null : friend.FavoriteColor.Trim();
 
-        await using var db = await Factory.CreateDbContextAsync();
-        if (Id == null)
+        try
         {
-            db.Friends.Add(friend);
+            var id = await Friends.SaveFriendAsync(friend);
+            Nav.NavigateTo($"/friends/{id}");
         }
-        else
+        catch (InvalidOperationException ex)
         {
-            // The friend was loaded by a different (now disposed) context, so mark it as changed.
-            db.Friends.Update(friend);
+            saveError = ex.Message;
+            saving = false;
         }
-        await db.SaveChangesAsync();
-
-        Nav.NavigateTo($"/friends/{friend.Id}");
     }
 }

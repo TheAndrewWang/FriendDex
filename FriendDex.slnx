@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/FriendDex.App/FriendDex.App.csproj" />
+    <Project Path="src/FriendDex.UI/FriendDex.UI.csproj" />
     <Project Path="src/FriendDex.Web/FriendDex.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">

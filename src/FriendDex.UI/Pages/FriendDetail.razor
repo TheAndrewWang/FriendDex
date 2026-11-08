@@ -1,13 +1,6 @@
 @page "/friends/{Id:int}"
-@rendermode InteractiveServer
-@using FriendDex.Web.Data
-@using FriendDex.Web.Domain
-@using FriendDex.Web.Services
-@using Microsoft.EntityFrameworkCore
-@inject IDbContextFactory<AppDbContext> Factory
+@inject IFriendDexService Friends
 @inject NavigationManager Nav
-@inject FriendNoteAgent Agent
-@inject ChibiGenerator ChibiAi
 
 @if (notFound)
 {
@@ -43,7 +36,7 @@
             <div class="photo-frame @(hopKey > 0 ? "hop" : "")" @key="hopKey">
                 @if (friend.Avatar != null)
                 {
-                    <img class="sprite" src="/friends/@friend.Id/avatar?v=@friend.AvatarGeneratedAt?.Ticks"
+                    <img class="sprite" src="@friend.AvatarDataUrl"
                          alt="Pixel sprite of @friend.Name" width="192" height="192" />
                 }
                 else
@@ -57,7 +50,7 @@
                     @(generating ? "Drawing…" : friend.Avatar == null ? "Make sprite" : "Redraw sprite")
                 </button>
                 <label class="px-btn px-btn-sm">
-                    @(friend.Photo == null ? "Add photo" : "Change photo")
+                    @(!friend.HasPhoto ? "Add photo" : "Change photo")
                     <InputFile OnChange="UploadPhotoAsync" accept="image/png,image/jpeg,image/webp,image/gif" class="visually-hidden" />
                 </label>
             </div>
@@ -66,7 +59,7 @@
                 {
                     <button class="text-btn" @onclick="ClearAvatarAsync">Use drawn version</button>
                 }
-                @if (friend.Photo != null)
+                @if (friend.HasPhoto)
                 {
                     <button class="text-btn" @onclick="RemovePhotoAsync">Remove photo</button>
                 }
@@ -74,6 +67,7 @@
             @if (generating) { <p class="muted small">Drawing can take up to a minute.</p> }
             @if (chibiError != null) { <p class="error-text" role="alert">@chibiError</p> }
             @if (photoError != null) { <p class="error-text" role="alert">@photoError</p> }
+            @if (actionError != null) { <p class="error-text" role="alert">@actionError</p> }
         </div>
 
         <div class="info-col">
@@ -287,23 +281,35 @@
     private int hopKey;
     private string? chibiError;
 
+    private string? actionError;
+
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
-        await using var db = await Factory.CreateDbContextAsync();
-        friend = await db.Friends.AsNoTracking().FirstOrDefaultAsync(f => f.Id == Id);
-        notFound = friend == null;
+        try
+        {
+            friend = await Friends.GetFriendAsync(Id);
+            notFound = friend == null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            actionError = ex.Message;
+        }
     }
 
-    // Runs a change against a fresh tracked copy of the friend, saves, then reloads the page data.
-    private async Task ChangeFriendAsync(Action<Friend> change)
+    // Runs one change through the data service, then reloads. Shows readable errors instead of crashing.
+    private async Task ChangeAsync(Func<Task> change)
     {
-        await using var db = await Factory.CreateDbContextAsync();
-        var tracked = await db.Friends.FirstOrDefaultAsync(f => f.Id == Id);
-        if (tracked == null) { notFound = true; return; }
-        change(tracked);
-        await db.SaveChangesAsync();
+        actionError = null;
+        try
+        {
+            await change();
+        }
+        catch (InvalidOperationException ex)
+        {
+            actionError = ex.Message;
+        }
         await LoadAsync();
     }
 
@@ -325,25 +331,28 @@
     private Task SaveInterestEditAsync(Interest interest)
     {
         editingInterestId = null;
-        return ChangeFriendAsync(f =>
+        var updated = new Interest
         {
-            var target = f.Interests.FirstOrDefault(i => i.Id == interest.Id);
-            if (target == null) return;
-            target.Label = editLabel.Trim();
-            target.Notes = string.IsNullOrWhiteSpace(editNotes) ? null : editNotes.Trim();
-        });
+            Id = interest.Id,
+            Label = editLabel.Trim(),
+            Notes = string.IsNullOrWhiteSpace(editNotes) ? null : editNotes.Trim(),
+            Kind = interest.Kind,
+        };
+        return ChangeAsync(() => Friends.UpdateInterestAsync(Id, updated));
     }
 
-    private Task FlipInterestAsync(Interest interest) => ChangeFriendAsync(f =>
+    private Task FlipInterestAsync(Interest interest) => ChangeAsync(() => Friends.UpdateInterestAsync(Id, new Interest
     {
-        var target = f.Interests.FirstOrDefault(i => i.Id == interest.Id);
-        if (target != null) target.Kind = target.Kind == InterestKind.Like ? InterestKind.Dislike : InterestKind.Like;
-    });
+        Id = interest.Id,
+        Label = interest.Label,
+        Notes = interest.Notes,
+        Kind = interest.Kind == InterestKind.Like ? InterestKind.Dislike : InterestKind.Like,
+    }));
 
     private Task DeleteInterestAsync(Interest interest)
     {
         openInterestId = null;
-        return ChangeFriendAsync(f => f.Interests.RemoveAll(i => i.Id == interest.Id));
+        return ChangeAsync(() => Friends.DeleteInterestAsync(Id, interest.Id));
     }
 
     private async Task AddInterestAsync()
@@ -354,7 +363,7 @@
             Notes = string.IsNullOrWhiteSpace(newInterest.Notes) ? null : newInterest.Notes.Trim(),
             Kind = newInterest.Kind,
         };
-        await ChangeFriendAsync(f => f.Interests.Add(toAdd));
+        await ChangeAsync(() => Friends.AddInterestAsync(Id, toAdd));
         newInterest = new() { Kind = toAdd.Kind };
     }
 
@@ -369,13 +378,14 @@
         addedMessage = null;
         try
         {
-            var p = await Agent.ProposeAsync(friend, note.Trim());
+            var p = await Friends.ProposeFromNoteAsync(Id, note.Trim());
 
             // New likes and dislikes are added right away, no confirmation.
             if (p.AddInterests.Count > 0)
             {
                 var addsOnly = p with { Gender = null, Birthday = null, FavoriteColor = null, UpdateInterests = [], RemoveInterestIds = [] };
-                await ChangeFriendAsync(f => FriendNoteAgent.Apply(f, addsOnly));
+                await Friends.ApplyProposalAsync(Id, addsOnly);
+                await LoadAsync();
                 addedMessage = "Added " + string.Join(", ", p.AddInterests.Select(a =>
                     $"{a.Label} ({(a.Kind == "Dislike" ? "dislike" : "like")})")) + ".";
                 p = p with { AddInterests = [] };
@@ -393,7 +403,7 @@
         {
             agentError = ex is InvalidOperationException
                 ? ex.Message
-                : $"Couldn't reach the AI. Check that ANTHROPIC_API_KEY is set, then try again. ({ex.GetType().Name})";
+                : $"Something went wrong asking the AI. Try again. ({ex.GetType().Name})";
         }
         finally
         {
@@ -405,7 +415,7 @@
     {
         if (proposal == null) return;
         var p = proposal;
-        await ChangeFriendAsync(f => FriendNoteAgent.Apply(f, p));
+        await ChangeAsync(() => Friends.ApplyProposalAsync(Id, p));
         proposal = null;
         note = "";
     }
@@ -431,18 +441,10 @@
         using var ms = new MemoryStream();
         await file.OpenReadStream(MaxPhotoBytes).CopyToAsync(ms);
         var bytes = ms.ToArray();
-        await ChangeFriendAsync(f =>
-        {
-            f.Photo = bytes;
-            f.PhotoContentType = file.ContentType;
-        });
+        await ChangeAsync(() => Friends.SetPhotoAsync(Id, bytes, file.ContentType));
     }
 
-    private Task RemovePhotoAsync() => ChangeFriendAsync(f =>
-    {
-        f.Photo = null;
-        f.PhotoContentType = null;
-    });
+    private Task RemovePhotoAsync() => ChangeAsync(() => Friends.SetPhotoAsync(Id, null, null));
 
     // ---- AI chibi ----
 
@@ -453,13 +455,8 @@
         chibiError = null;
         try
         {
-            var image = await ChibiAi.GenerateAsync(friend);
-            await ChangeFriendAsync(f =>
-            {
-                f.Avatar = image.Bytes;
-                f.AvatarContentType = image.ContentType;
-                f.AvatarGeneratedAt = DateTime.UtcNow;
-            });
+            await Friends.GenerateSpriteAsync(Id);
+            await LoadAsync();
             hopKey++;
         }
         catch (InvalidOperationException ex)
@@ -468,7 +465,7 @@
         }
         catch (Exception ex)
         {
-            chibiError = $"Couldn't reach Gemini. Check your connection and try again. ({ex.GetType().Name})";
+            chibiError = $"Something went wrong drawing the sprite. Try again. ({ex.GetType().Name})";
         }
         finally
         {
@@ -476,12 +473,7 @@
         }
     }
 
-    private Task ClearAvatarAsync() => ChangeFriendAsync(f =>
-    {
-        f.Avatar = null;
-        f.AvatarContentType = null;
-        f.AvatarGeneratedAt = null;
-    });
+    private Task ClearAvatarAsync() => ChangeAsync(() => Friends.ClearSpriteAsync(Id));
 
     // Only plain color names or hex codes are used as CSS, so user text can't inject styles.
     private static string SafeSwatch(string color)
@@ -494,13 +486,15 @@
 
     private async Task DeleteFriendAsync()
     {
-        await using var db = await Factory.CreateDbContextAsync();
-        var tracked = await db.Friends.FindAsync(Id);
-        if (tracked != null)
+        try
         {
-            db.Friends.Remove(tracked);
-            await db.SaveChangesAsync();
+            await Friends.DeleteFriendAsync(Id);
+            Nav.NavigateTo("/friends");
         }
-        Nav.NavigateTo("/friends");
+        catch (InvalidOperationException ex)
+        {
+            actionError = ex.Message;
+            confirmDelete = false;
+        }
     }
 }

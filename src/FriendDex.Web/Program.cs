@@ -1,3 +1,4 @@
+using FriendDex.Web.Api;
 using FriendDex.Web.Components;
 using FriendDex.Web.Data;
 using FriendDex.Web.Services;
@@ -28,6 +29,8 @@ builder.Services.AddDbContextFactory<AppDbContext>((services, o) =>
     o.UseMongoDB(services.GetRequiredService<IMongoClient>(), mongoDatabase));
 
 builder.Services.AddSingleton<FriendNoteAgent>();
+builder.Services.AddScoped<IFriendDexService, ServerFriendDexService>();
+builder.AddAccounts();
 builder.Services.AddHttpClient<ChibiGenerator>(c => c.Timeout = TimeSpan.FromMinutes(2));
 
 var app = builder.Build();
@@ -37,21 +40,25 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
+app.UseForwardedHeaders();
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-// Serves a friend's AI-generated chibi image.
-app.MapGet("/friends/{id:int}/avatar", async (int id, IDbContextFactory<AppDbContext> factory) =>
-{
-    await using var db = await factory.CreateDbContextAsync();
-    var friend = await db.Friends.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id);
-    return friend?.Avatar is { Length: > 0 } bytes
-        ? Results.File(bytes, friend.AvatarContentType ?? "image/png")
-        : Results.NotFound();
-});
+// Log in / sign up (website and app), and the friend API for the Android app.
+app.MapAccounts();
+app.MapFriendApi();
 
+// Every page needs a signed-in account; logged-out visitors go to /login.
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AddAdditionalAssemblies(typeof(FriendDex.Web.Services.IFriendDexService).Assembly)
+    .RequireAuthorization();
 
 app.Run();
+
+// Lets the in-memory test server find this app.
+public partial class Program;

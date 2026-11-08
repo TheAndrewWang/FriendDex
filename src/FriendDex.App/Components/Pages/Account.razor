@@ -1,0 +1,31 @@
+@page "/account"
+@inject AppSettings Settings
+@inject HttpAccountClient Accounts
+@inject NavigationManager Nav
+
+<PageTitle>Account · FriendDex</PageTitle>
+
+<section class="win">
+    <h1 class="win-title">Account</h1>
+    <dl class="account-facts">
+        <dt>Logged in as</dt>
+        <dd>@Settings.Email</dd>
+        <dt>Server</dt>
+        <dd>@Settings.ServerUrl</dd>
+    </dl>
+    <button class="px-btn px-btn-berry" @onclick="LogOutAsync" disabled="@busy">Log out</button>
+</section>
+
+@code {
+    private bool busy;
+
+    protected override Task OnInitializedAsync() => Settings.LoadAsync();
+
+    private async Task LogOutAsync()
+    {
+        busy = true;
+        await Accounts.LogoutAsync(Settings.ServerUrl, Settings.Token);
+        Settings.ClearLogin();
+        Nav.NavigateTo("/login");
+    }
+}

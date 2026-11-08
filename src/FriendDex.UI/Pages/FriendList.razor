@@ -1,15 +1,14 @@
 @page "/"
 @page "/friends"
-@rendermode InteractiveServer
-@using FriendDex.Web.Data
-@using FriendDex.Web.Domain
-@using FriendDex.Web.Services
-@using Microsoft.EntityFrameworkCore
-@inject IDbContextFactory<AppDbContext> Factory
+@inject IFriendDexService Friends
 
 <PageTitle>FriendDex</PageTitle>
 
-@if (friends == null)
+@if (loadError != null)
+{
+    <section class="win"><p class="error-text" role="alert">@loadError</p></section>
+}
+else if (friends == null)
 {
     <section class="win"><p class="muted">Loading your friends…</p></section>
 }
@@ -36,7 +35,7 @@ else
                         <span class="slot-sprite">
                             @if (f.AvatarGeneratedAt != null)
                             {
-                                <img class="sprite" src="/friends/@f.Id/avatar?v=@f.AvatarGeneratedAt?.Ticks" alt="" width="72" height="72" />
+                                <img class="sprite" src="@f.AvatarDataUrl" alt="" width="72" height="72" />
                             }
                             else
                             {
@@ -62,13 +61,17 @@ else
     private List<Friend>? friends;
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
+    private string? loadError;
+
     protected override async Task OnInitializedAsync()
     {
-        await using var db = await Factory.CreateDbContextAsync();
-        // Interests are embedded in each friend's document, so they load automatically.
-        friends = await db.Friends
-            .AsNoTracking()
-            .OrderBy(f => f.Name)
-            .ToListAsync();
+        try
+        {
+            friends = (await Friends.GetFriendsAsync()).OrderBy(f => f.Name).ToList();
+        }
+        catch (InvalidOperationException ex)
+        {
+            loadError = ex.Message;
+        }
     }
 }

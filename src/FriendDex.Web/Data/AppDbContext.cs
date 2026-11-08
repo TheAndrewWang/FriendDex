@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Friend> Friends => Set<Friend>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +34,19 @@ public class AppDbContext : DbContext
                 interest.Property(i => i.Label).IsRequired().HasMaxLength(50);
                 interest.Property(i => i.Kind).HasConversion<string>();
             });
+        });
+
+        modelBuilder.Entity<User>(user =>
+        {
+            user.ToCollection("users");
+            user.Property(u => u.Id).HasValueGenerator<RandomIdGenerator>().ValueGeneratedOnAdd();
+            user.Property(u => u.Email).IsRequired().HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<ApiToken>(token =>
+        {
+            token.ToCollection("api_tokens");
+            token.Property(t => t.Id).ValueGeneratedNever();
         });
     }
 }

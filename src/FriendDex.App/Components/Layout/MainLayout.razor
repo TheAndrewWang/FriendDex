@@ -5,10 +5,13 @@
 <div class="game">
     <header class="topbar">
         <a class="logo" href="/friends">FriendDex</a>
-        <div class="topbar-actions">
-            <a class="px-btn px-btn-sun px-btn-sm" href="/friends/new">+ New</a>
-            <a class="px-btn px-btn-sm" href="/account" aria-label="Account">⚙</a>
-        </div>
+        @if (Settings.IsLoggedIn)
+        {
+            <div class="topbar-actions">
+                <a class="px-btn px-btn-sun px-btn-sm" href="/friends/new">+ New</a>
+                <a class="px-btn px-btn-sm" href="/account" aria-label="Account">⚙</a>
+            </div>
+        }
     </header>
 
     <main class="stage">

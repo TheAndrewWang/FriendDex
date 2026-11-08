@@ -4,9 +4,9 @@
     <header class="topbar">
         <a class="logo" href="/friends">FriendDex</a>
         <div class="topbar-actions">
-            <a class="px-btn px-btn-sun" href="/friends/new">+ New friend</a>
             <AuthorizeView>
                 <Authorized>
+                    <a class="px-btn px-btn-sun" href="/friends/new">+ New friend</a>
                     <form method="post" action="/logout" class="logout">
                         <span class="who">@context.User.Identity?.Name</span>
                         <button type="submit" class="text-btn">Log out</button>

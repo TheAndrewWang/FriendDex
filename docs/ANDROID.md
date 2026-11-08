@@ -76,7 +76,8 @@ Install it on your phone, either way:
 
 On first launch the app opens the login screen:
 
-- **Server address:** your hosted address, e.g. `https://frienddex.onrender.com`
+- **Server:** the app uses `https://frienddex.onrender.com` by default. Tap **Use a different server** to
+  point it somewhere else (for example your laptop during development).
 - **Email and password:** the same account as the website. Tap **Create an account** to sign up from the
   phone instead (you'll need the invite code).
 

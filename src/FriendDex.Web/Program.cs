@@ -52,12 +52,18 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 // Quick check that the server can reach MongoDB. Shows no secrets, only whether it works.
-app.MapGet("/health", async (IMongoClient mongo, ILogger<Program> log) =>
+app.MapGet("/health", async (IMongoClient mongo, IConfiguration config, ILogger<Program> log) =>
 {
+    // Whether each AI key is present (never the key itself).
+    string KeyStatus(string name) => string.IsNullOrWhiteSpace(config[name]) ? "missing" : "set";
+    var anthropicKey = KeyStatus("ANTHROPIC_API_KEY");
+    var geminiKey = KeyStatus("GEMINI_API_KEY");
+    var signUp = string.IsNullOrWhiteSpace(config["FRIENDDEX_INVITE_CODE"]) ? "closed" : "open with invite code";
+
     try
     {
         await mongo.GetDatabase("admin").RunCommandAsync<MongoDB.Bson.BsonDocument>(new MongoDB.Bson.BsonDocument("ping", 1));
-        return Results.Ok(new { server = "ok", database = "ok" });
+        return Results.Ok(new { server = "ok", database = "ok", anthropicKey, geminiKey, signUp });
     }
     catch (Exception ex)
     {
@@ -66,6 +72,9 @@ app.MapGet("/health", async (IMongoClient mongo, ILogger<Program> log) =>
         {
             server = "ok",
             database = "unreachable",
+            anthropicKey,
+            geminiKey,
+            signUp,
             hint = "Check MONGODB_URI and that MongoDB Atlas Network Access allows this server (0.0.0.0/0).",
             error = ex.GetType().Name,
         }, statusCode: StatusCodes.Status503ServiceUnavailable);

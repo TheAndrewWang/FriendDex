@@ -6,11 +6,13 @@ namespace FriendDex.App.Services;
 // The address and email are kept in normal app preferences; the login token in Android's secure storage.
 public class AppSettings : IServerConnection
 {
+    public const string DefaultServerUrl = "https://frienddex.onrender.com";
+
     private const string UrlKey = "server_url";
     private const string EmailKey = "account_email";
     private const string TokenKey = "login_token";
 
-    public string ServerUrl { get; private set; } = "";
+    public string ServerUrl { get; private set; } = DefaultServerUrl;
     public string Email { get; private set; } = "";
     public string Token { get; private set; } = "";
     private bool loaded;
@@ -20,7 +22,7 @@ public class AppSettings : IServerConnection
     public async Task LoadAsync()
     {
         if (loaded) return;
-        ServerUrl = Preferences.Default.Get(UrlKey, "");
+        ServerUrl = Preferences.Default.Get(UrlKey, DefaultServerUrl);
         Email = Preferences.Default.Get(EmailKey, "");
         Token = await SecureStorage.Default.GetAsync(TokenKey) ?? "";
         loaded = true;

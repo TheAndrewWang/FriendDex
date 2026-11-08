@@ -96,3 +96,26 @@ public class PixelatorTests
         Assert.Equal(SkiaSharp.SKColors.Blue, result.GetPixel(21, 12));
     }
 }
+
+public class PixelatorFramingTests
+{
+    [Fact]
+    public void ToPixelGrid_CentersSmallCharacterInCorner()
+    {
+        // White 200x200 image with a black 20x40 "character" in the top-left corner.
+        using var bmp = new SkiaSharp.SKBitmap(200, 200);
+        using (var canvas = new SkiaSharp.SKCanvas(bmp))
+        {
+            canvas.Clear(SkiaSharp.SKColors.White);
+            using var paint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.Black };
+            canvas.DrawRect(10, 10, 20, 40, paint);
+        }
+        using var img = SkiaSharp.SKImage.FromBitmap(bmp);
+        var output = Pixelator.ToPixelGrid(img.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100).ToArray(), grid: 48);
+
+        using var result = SkiaSharp.SKBitmap.Decode(output);
+        Assert.Equal(SkiaSharp.SKColors.Black, result.GetPixel(24, 24));   // character now fills the middle
+        Assert.Equal(SkiaSharp.SKColors.White, result.GetPixel(1, 1));     // margin stays white
+        Assert.Equal(SkiaSharp.SKColors.Black, result.GetPixel(24, 4));    // tall shape reaches near the top
+    }
+}

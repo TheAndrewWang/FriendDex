@@ -78,20 +78,24 @@ public class ChibiGenerator(HttpClient http, IConfiguration config)
         {
             "A single pixel art sprite of a cute chibi character, about 48x48 pixels, in a polished 16-bit game style. " +
                 "Pixels are crisp, hard-edged squares: no anti-aliasing, no blur, no smooth gradients.",
+            "Framing: FULL BODY, always. Show the entire character from the top of the head down to the feet, " +
+                "with both feet visible and standing on the bottom of the frame area. Never crop at the waist or chest; " +
+                "never a bust, portrait or headshot.",
             "Viewing angle: straight-on front view. The character faces the viewer directly, standing upright, " +
                 "symmetrical pose, arms relaxed at the sides.",
             "Proportions: chibi, a big head that is about half of the body, small body, short arms and legs.",
             "Outline: a clean dark outline 1 pixel wide around the whole character, with dark pixels for internal lines.",
             "Face: large friendly eyes with white highlight pixels, small simple mouth, light blush on the cheeks.",
             "Color: bright, cheerful colors with 3 or 4 shades per area (base, shadow, highlight) for soft, readable shading.",
-            "Background: plain pure white. Only the one character, filling most of the frame, centered. No text, " +
-                "no border, no ground shadow.",
+            "Background: plain pure white. Only the one character, centered, with the whole body taking up about " +
+                "80% of the image height and a little white space on every side. No text, no border, no ground shadow.",
         };
 
         if (hasPhoto)
         {
             lines.Add("The character is the person in the attached photo drawn as a human chibi sprite: keep their hairstyle, " +
-                "hair color, skin tone, and glasses or other distinctive features, simplified into a few big pixels.");
+                "hair color, skin tone, and glasses or other distinctive features, simplified into a few big pixels. " +
+                "The photo may show only their face or upper body; still draw the complete chibi body with legs and feet.");
         }
         else if (!string.IsNullOrWhiteSpace(friend.Gender))
         {
@@ -111,6 +115,8 @@ public class ChibiGenerator(HttpClient http, IConfiguration config)
             lines.Add($"Show their interests with one or two tiny pixel props (just a few pixels each) for: {string.Join(", ", likes)}.");
         }
 
+        // Repeat the most important rule last; models follow the end of a prompt closely.
+        lines.Add("Remember: one full-body character, head to feet, front view, centered on white.");
         return string.Join("\n", lines);
     }
 

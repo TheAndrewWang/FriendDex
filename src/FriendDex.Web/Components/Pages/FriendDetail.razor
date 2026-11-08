@@ -132,6 +132,7 @@
         </button>
     </div>
     @if (agentError != null) { <p class="error-text" role="alert">@agentError</p> }
+    @if (addedMessage != null) { <p class="added-text" role="status">@addedMessage</p> }
 
     @if (proposal != null)
     {
@@ -143,7 +144,7 @@
             }
             else
             {
-                <p class="choices-summary">@proposal.Summary</p>
+                <p class="choices-summary">@(addedMessage != null ? "These changes need your OK:" : proposal.Summary)</p>
                 <ul class="change-list">
                     @if (proposal.Gender != null) { <li>Gender: @proposal.Gender</li> }
                     @if (proposal.Birthday != null) { <li>Birthday: @proposal.Birthday</li> }
@@ -277,6 +278,7 @@
     private string note = "";
     private bool thinking;
     private string? agentError;
+    private string? addedMessage;
     private FriendUpdateProposal? proposal;
 
     private string? photoError;
@@ -364,9 +366,28 @@
         thinking = true;
         agentError = null;
         proposal = null;
+        addedMessage = null;
         try
         {
-            proposal = await Agent.ProposeAsync(friend, note.Trim());
+            var p = await Agent.ProposeAsync(friend, note.Trim());
+
+            // New likes and dislikes are added right away, no confirmation.
+            if (p.AddInterests.Count > 0)
+            {
+                var addsOnly = p with { Gender = null, Birthday = null, FavoriteColor = null, UpdateInterests = [], RemoveInterestIds = [] };
+                await ChangeFriendAsync(f => FriendNoteAgent.Apply(f, addsOnly));
+                addedMessage = "Added " + string.Join(", ", p.AddInterests.Select(a =>
+                    $"{a.Label} ({(a.Kind == "Dislike" ? "dislike" : "like")})")) + ".";
+                p = p with { AddInterests = [] };
+                if (p.IsEmpty)
+                {
+                    note = "";
+                    return;
+                }
+            }
+
+            // Anything else (edits, removals, birthday, color...) still asks first.
+            proposal = p;
         }
         catch (Exception ex)
         {

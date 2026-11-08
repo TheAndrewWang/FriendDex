@@ -63,5 +63,10 @@ public static class FriendApi
         {
             return Results.BadRequest(new ErrorResponse(ex.Message));
         }
+        catch (Exception ex) when (ex is TimeoutException || ex.GetType().Namespace?.StartsWith("MongoDB") == true)
+        {
+            return Results.Json(new ErrorResponse("FriendDex can't reach its database right now. Try again in a minute."),
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
     }
 }

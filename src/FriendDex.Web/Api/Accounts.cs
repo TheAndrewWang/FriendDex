@@ -14,6 +14,7 @@ public static class Accounts
 {
     public const string AuthRateLimit = "auth";
     public const string AppPolicy = "app";
+    private const string DatabaseDown = "FriendDex can't reach its database right now. Try again in a minute.";
 
     public record LoginRequest(string Email, string Password);
     public record RegisterRequest(string Email, string Password, string InviteCode);
@@ -67,11 +68,20 @@ public static class Accounts
 
         app.MapGet("/login", (string? error, string? email) => Html(LoginPage(error, email)));
 
-        app.MapPost("/login", async (HttpContext http, AccountService accounts) =>
+        app.MapPost("/login", async (HttpContext http, AccountService accounts, ILogger<AccountService> log) =>
         {
             var form = await http.Request.ReadFormAsync();
             var email = form["email"].ToString();
-            var user = await accounts.CheckPasswordAsync(email, form["password"].ToString());
+            Domain.User? user;
+            try
+            {
+                user = await accounts.CheckPasswordAsync(email, form["password"].ToString());
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                log.LogError(ex, "Login failed: database problem");
+                return Results.Redirect($"/login?error=database&email={Uri.EscapeDataString(email)}");
+            }
             if (user == null) return Results.Redirect($"/login?error=wrong&email={Uri.EscapeDataString(email)}");
             await SignInAsync(http, user.Id, user.Email);
             return Results.Redirect("/friends");
@@ -79,7 +89,7 @@ public static class Accounts
 
         app.MapGet("/register", (string? error, string? email) => Html(RegisterPage(error, email)));
 
-        app.MapPost("/register", async (HttpContext http, AccountService accounts) =>
+        app.MapPost("/register", async (HttpContext http, AccountService accounts, ILogger<AccountService> log) =>
         {
             var form = await http.Request.ReadFormAsync();
             var email = form["email"].ToString();
@@ -93,6 +103,11 @@ public static class Accounts
             {
                 return Results.Redirect($"/register?error={Uri.EscapeDataString(ex.Message)}&email={Uri.EscapeDataString(email)}");
             }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Sign-up failed: database problem");
+                return Results.Redirect($"/register?error={Uri.EscapeDataString(DatabaseDown)}&email={Uri.EscapeDataString(email)}");
+            }
         }).DisableAntiforgery().RequireRateLimiting(AuthRateLimit);
 
         app.MapPost("/logout", async (HttpContext http) =>
@@ -105,15 +120,24 @@ public static class Accounts
 
         var auth = app.MapGroup("/api/auth").RequireRateLimiting(AuthRateLimit);
 
-        auth.MapPost("/login", async (LoginRequest body, AccountService accounts) =>
+        auth.MapPost("/login", async (LoginRequest body, AccountService accounts, ILogger<AccountService> log) =>
         {
-            var user = await accounts.CheckPasswordAsync(body.Email, body.Password);
+            Domain.User? user;
+            try
+            {
+                user = await accounts.CheckPasswordAsync(body.Email, body.Password);
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                log.LogError(ex, "App login failed: database problem");
+                return Results.Json(new FriendApi.ErrorResponse(DatabaseDown), statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
             return user == null
                 ? Results.Json(new FriendApi.ErrorResponse("Wrong email or password."), statusCode: StatusCodes.Status401Unauthorized)
                 : Results.Ok(new TokenResponse(await accounts.CreateApiTokenAsync(user.Id), user.Email));
         });
 
-        auth.MapPost("/register", async (RegisterRequest body, AccountService accounts) =>
+        auth.MapPost("/register", async (RegisterRequest body, AccountService accounts, ILogger<AccountService> log) =>
         {
             try
             {
@@ -123,6 +147,11 @@ public static class Accounts
             catch (InvalidOperationException ex)
             {
                 return Results.BadRequest(new FriendApi.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "App sign-up failed: database problem");
+                return Results.Json(new FriendApi.ErrorResponse(DatabaseDown), statusCode: StatusCodes.Status503ServiceUnavailable);
             }
         });
 
@@ -161,7 +190,8 @@ public static class Accounts
                 <label for="password">Password</label>
                 <input id="password" name="password" type="password" class="px-input" autocomplete="current-password" required />
             </div>
-            {(error != null ? "<p class=\"error-text\" role=\"alert\">Wrong email or password.</p>" : "")}
+            {(error == "database" ? $"<p class=\"error-text\" role=\"alert\">{DatabaseDown}</p>"
+                : error != null ? "<p class=\"error-text\" role=\"alert\">Wrong email or password.</p>" : "")}
             <div class="btn-row">
                 <button type="submit" class="px-btn px-btn-leaf">Log in</button>
                 <a class="text-btn" href="/register">Create an account</a>

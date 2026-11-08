@@ -24,7 +24,10 @@ if (string.IsNullOrWhiteSpace(mongoUri))
 }
 var mongoDatabase = builder.Configuration["MONGODB_DATABASE"] is { Length: > 0 } name ? name : "frienddex";
 
-builder.Services.AddSingleton<IMongoClient>(new MongoClient(mongoUri));
+// Give up on an unreachable database after 10 seconds (the driver's default is 30).
+var mongoSettings = MongoClientSettings.FromConnectionString(mongoUri);
+mongoSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
+builder.Services.AddSingleton<IMongoClient>(new MongoClient(mongoSettings));
 builder.Services.AddDbContextFactory<AppDbContext>((services, o) =>
     o.UseMongoDB(services.GetRequiredService<IMongoClient>(), mongoDatabase));
 
@@ -48,6 +51,27 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+// Quick check that the server can reach MongoDB. Shows no secrets, only whether it works.
+app.MapGet("/health", async (IMongoClient mongo, ILogger<Program> log) =>
+{
+    try
+    {
+        await mongo.GetDatabase("admin").RunCommandAsync<MongoDB.Bson.BsonDocument>(new MongoDB.Bson.BsonDocument("ping", 1));
+        return Results.Ok(new { server = "ok", database = "ok" });
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Health check: can't reach MongoDB");
+        return Results.Json(new
+        {
+            server = "ok",
+            database = "unreachable",
+            hint = "Check MONGODB_URI and that MongoDB Atlas Network Access allows this server (0.0.0.0/0).",
+            error = ex.GetType().Name,
+        }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
 // Log in / sign up (website and app), and the friend API for the Android app.
 app.MapAccounts();
 app.MapFriendApi();

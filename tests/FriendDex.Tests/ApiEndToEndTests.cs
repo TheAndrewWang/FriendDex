@@ -103,6 +103,20 @@ public class ApiEndToEndTests : IDisposable
     }
 
     [Fact]
+    public async Task Photos_UpTo5MB_AreAccepted_AndBiggerOnesRejected()
+    {
+        var app = await SignUpAsync("photos@example.com");
+        var id = await app.SaveFriendAsync(new Friend { Name = "Big photo" });
+
+        await app.SetPhotoAsync(id, new byte[5 * 1024 * 1024], "image/jpeg");
+        Assert.True((await app.GetFriendAsync(id))!.HasPhoto);
+
+        var tooBig = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            app.SetPhotoAsync(id, new byte[5 * 1024 * 1024 + 1], "image/jpeg"));
+        Assert.Contains("5 MB", tooBig.Message);
+    }
+
+    [Fact]
     public async Task EachAccount_OnlySeesItsOwnFriends()
     {
         var alice = await SignUpAsync("alice@example.com");

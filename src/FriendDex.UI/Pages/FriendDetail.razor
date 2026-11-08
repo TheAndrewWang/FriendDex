@@ -256,7 +256,7 @@
 @code {
     [Parameter] public int Id { get; set; }
 
-    private const long MaxPhotoBytes = 2 * 1024 * 1024;
+    private const long MaxPhotoBytes = 5 * 1024 * 1024;
 
     private Friend? friend;
     private bool notFound;
@@ -434,7 +434,7 @@
         }
         if (file.Size > MaxPhotoBytes)
         {
-            photoError = "That image is over 2 MB. Please choose a smaller one.";
+            photoError = "That image is over 5 MB. Please choose a smaller one.";
             return;
         }
 

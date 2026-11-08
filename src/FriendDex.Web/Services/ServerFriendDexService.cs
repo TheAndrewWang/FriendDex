@@ -97,14 +97,14 @@ public class ServerFriendDexService(
     public Task DeleteInterestAsync(int friendId, int interestId) =>
         ChangeAsync(friendId, f => f.Interests.RemoveAll(i => i.Id == interestId));
 
-    public const int MaxPhotoBytes = 2 * 1024 * 1024;
+    public const int MaxPhotoBytes = 5 * 1024 * 1024;
     private static readonly string[] AllowedPhotoTypes = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
     public Task SetPhotoAsync(int friendId, byte[]? photo, string? contentType) => ChangeAsync(friendId, f =>
     {
         if (photo is { Length: > 0 })
         {
-            if (photo.Length > MaxPhotoBytes) throw new InvalidOperationException("That image is over 2 MB. Please choose a smaller one.");
+            if (photo.Length > MaxPhotoBytes) throw new InvalidOperationException("That image is over 5 MB. Please choose a smaller one.");
             if (contentType == null || !AllowedPhotoTypes.Contains(contentType))
             {
                 throw new InvalidOperationException("Please choose a PNG, JPEG, WebP or GIF image.");
